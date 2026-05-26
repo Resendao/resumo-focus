@@ -1,0 +1,197 @@
+---
+title: "Boletim Macro Semanal"
+subtitle: "26 de maio de 2026"
+date: "2026-05-26"
+format:
+  html:
+    toc: true
+    toc-title: "Sumário"
+    number-sections: true
+    theme: cosmo
+    self-contained: true
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+# Função auxiliar: devolve string formatada ou aviso quando o valor é NA
+fmt <- function(x, digits = 2, prefix = "", suffix = "") {
+  if (is.na(x)) {
+    return("indicador indisponível nesta semana")
+  }
+  paste0(prefix, formatC(x, format = "f", digits = digits, big.mark = ".", decimal.mark = ","), suffix)
+}
+
+# Leitura do resumo
+resumo <- read.csv(
+  "c:/Users/Andre/OneDrive/Desktop/Claude (Analise-Macro)/output/tabelas/resumo.csv",
+  stringsAsFactors = FALSE
+)
+
+# Extração por indicador (retorna NA se a linha não existir)
+get_val <- function(ind, col) {
+  v <- resumo[resumo$indicador == ind, col]
+  if (length(v) == 0) return(NA)
+  suppressWarnings(as.numeric(v))
+}
+
+# IPCA
+ipca_val <- get_val("IPCA", "valor_atual")
+ipca_mes <- get_val("IPCA", "var_mes")
+ipca_12m <- get_val("IPCA", "var_12m")
+ipca_ano <- get_val("IPCA", "var_ano")
+
+# Câmbio
+cambio_val <- get_val("Cambio_USDBRL", "valor_atual")
+cambio_mes <- get_val("Cambio_USDBRL", "var_mes")
+cambio_12m <- get_val("Cambio_USDBRL", "var_12m")
+cambio_ano <- get_val("Cambio_USDBRL", "var_ano")
+
+# Selic
+selic_val <- get_val("Selic", "valor_atual")
+selic_mes <- get_val("Selic", "var_mes")
+selic_12m <- get_val("Selic", "var_12m")
+selic_ano <- get_val("Selic", "var_ano")
+
+# IBC-Br
+ibc_val    <- get_val("IBC-Br", "valor_atual")
+ibc_mes_sa <- get_val("IBC-Br", "var_mes")   # série com ajuste sazonal (BCB/SGS 24364)
+ibc_12m    <- get_val("IBC-Br", "var_12m")   # série original sem ajuste (BCB/SGS 24363)
+ibc_ano    <- get_val("IBC-Br", "var_ano")
+```
+
+> **Nota de referência:** os dados de IPCA, câmbio e IBC-Br têm como última leitura disponível
+> **abril de 2026**; a Selic refere-se a **maio de 2026**.
+> Fonte primária: Banco Central do Brasil (BCB/SGS) e IBGE.
+
+---
+
+## Quadro-Resumo dos Indicadores
+
+```{r tabela-resumo}
+library(knitr)
+
+df_exib <- data.frame(
+  Indicador       = c("IPCA", "Câmbio (USD/BRL)", "Selic", "IBC-Br"),
+  Unidade         = c("% a.m.", "R$/US$", "% a.a.", "Índice"),
+  `Valor Atual`   = c(
+    fmt(ipca_val,   suffix = "%"),
+    fmt(cambio_val, prefix = "R$ "),
+    fmt(selic_val,  suffix = "%"),
+    fmt(ibc_val,    digits = 1)
+  ),
+  `Var. Mensal`   = c(
+    fmt(ipca_mes,   suffix = " p.p."),
+    fmt(cambio_mes, suffix = "%"),
+    fmt(selic_mes,  suffix = " p.p."),
+    fmt(ibc_mes_sa, suffix = "%")
+  ),
+  `Var. 12 meses` = c(
+    fmt(ipca_12m,   suffix = "%"),
+    fmt(cambio_12m, suffix = "%"),
+    fmt(selic_12m,  suffix = " p.p."),
+    fmt(ibc_12m,    suffix = "%")
+  ),
+  check.names = FALSE
+)
+
+kable(
+  df_exib,
+  align   = c("l", "l", "r", "r", "r"),
+  caption = "Quadro resumo — indicadores macroeconômicos selecionados (referência: maio/2026)"
+)
+```
+
+---
+
+## Inflação — IPCA
+
+O Índice de Preços ao Consumidor Amplo (IPCA), calculado pelo IBGE, registrou variação de
+`r fmt(ipca_val, suffix = "%")` em abril de 2026, recuo de
+`r fmt(abs(ipca_mes), suffix = " ponto percentual")` em relação ao mês anterior.
+No acumulado do ano, a alta chega a `r fmt(ipca_ano, suffix = "%")`, enquanto a variação
+acumulada em 12 meses alcança `r fmt(ipca_12m, suffix = "%")`.
+
+O resultado de abril confirma uma desaceleração marginal no ritmo de alta de preços,
+ainda que a leitura em 12 meses permaneça acima do centro da meta vigente.
+O comportamento dos núcleos e dos serviços subjacentes continuará sendo monitorado
+de perto nas próximas divulgações, uma vez que esses componentes tendem a refletir
+com maior fidelidade as pressões inflacionárias de caráter mais persistente.
+
+**Pontos de atenção:**
+
+- Pressões em alimentos e energia seguem no radar dado o ambiente externo volátil.
+- A ancoragem das expectativas para horizontes mais longos permanece essencial
+  para a convergência da inflação à meta.
+
+---
+
+## Câmbio e Juros
+
+### Taxa de Câmbio — USD/BRL
+
+O dólar norte-americano encerrou abril de 2026 cotado a `r fmt(cambio_val, prefix = "R$ ")`,
+acumulando recuo de `r fmt(abs(cambio_mes), suffix = "%")` frente ao mês anterior.
+Na comparação com 12 meses atrás, a moeda brasileira apresenta valorização de
+`r fmt(abs(cambio_12m), suffix = "%")` em relação ao dólar.
+
+A apreciação do real ao longo do período reflete, em parte, o diferencial de juros
+favorável ao Brasil e um ambiente externo de menor aversão ao risco em relação
+aos ativos emergentes. Contudo, fatores como a política monetária nos Estados Unidos
+e incertezas fiscais domésticas continuam sendo vetores relevantes de volatilidade
+cambial no curto prazo.
+
+---
+
+## Política Monetária — Taxa Selic
+
+O Comitê de Política Monetária (Copom) do Banco Central do Brasil calibrou a taxa Selic
+para `r fmt(selic_val, suffix = "% a.a.")` em maio de 2026. A variação mensal foi de
+`r fmt(selic_mes, suffix = " p.p.")`, acumulando `r fmt(selic_ano, suffix = " p.p.")` no ano
+e `r fmt(selic_12m, suffix = " p.p.")` em 12 meses.
+
+A taxa básica de juros segue em patamar contracionista, refletindo a estratégia do Copom
+de garantir a convergência da inflação ao redor da meta. O ciclo de ajuste será
+reavaliado reunião a reunião, com atenção especial ao balanço de riscos para a inflação,
+ao nível de atividade econômica e à dinâmica das expectativas de mercado.
+
+**Contexto:**
+
+- A política monetária contracionista opera com defasagem, e seus efeitos sobre
+  a demanda agregada e a inflação tendem a se materializar ao longo dos próximos trimestres.
+- A comunicação do Copom permanece como instrumento central de ancoragem das expectativas.
+
+---
+
+## Atividade Econômica — IBC-Br
+
+O Índice de Atividade Econômica do Banco Central (IBC-Br) é utilizado como proxy mensal
+do PIB e é disponibilizado em duas séries com tratamentos distintos: **com ajuste sazonal**
+(utilizada para a variação mensal, que elimina oscilações típicas de calendário) e
+**sem ajuste sazonal** (série original, referência para a variação interanual).
+
+Em abril de 2026:
+
+- **Variação mensal — série com ajuste sazonal (Fonte: BCB/SGS, cód. 24364):**
+  `r fmt(ibc_mes_sa, suffix = "%")`. O recuo pontual, já expurgado do efeito sazonal,
+  sinaliza moderação no ritmo de expansão da atividade frente a março, sem necessariamente
+  indicar reversão de tendência no ciclo de crescimento.
+
+- **Variação acumulada em 12 meses — série original sem ajuste sazonal (Fonte: BCB/SGS, cód. 24363):**
+  `r fmt(ibc_12m, suffix = "%")`. A leitura interanual evidencia que, no horizonte
+  de um ano, a atividade econômica segue em trajetória expansionista robusta,
+  refletindo a resiliência do mercado de trabalho e do consumo das famílias.
+
+O nível do índice atingiu `r fmt(ibc_val, digits = 1)` pontos em abril de 2026.
+No acumulado do ano, o crescimento é de `r fmt(ibc_ano, suffix = "%")`.
+
+A discrepância entre a variação mensal negativa (série SA) e o forte crescimento em
+12 meses (série original) é consistente com uma economia que ainda opera em nível elevado,
+mas que começa a sentir os efeitos defasados da política monetária mais restritiva
+sobre a demanda agregada.
+
+---
+
+*Boletim elaborado com dados públicos do Banco Central do Brasil (BCB/SGS) e do IBGE.
+Referência temporal: semana encerrada em 26 de maio de 2026.*
