@@ -1,0 +1,34 @@
+name: Focus — Download semanal
+
+on:
+  schedule:
+    - cron: "15 12 * * 1"   # toda segunda às 12h15 UTC (9h15 BRT)
+  workflow_dispatch:          # disparo manual pelo GitHub
+
+permissions:
+  contents: write             # necessário para commitar de volta ao repositório
+
+jobs:
+  baixar-e-extrair:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Baixar PDF do Focus
+        run: python src/baixar_focus.py
+
+      - name: Extrair texto do PDF
+        run: python src/extrair_texto.py
+
+      - name: Commitar arquivos gerados
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/focus_*.pdf data/focus_*.txt data/focus_*.html
+          git diff --cached --quiet || git commit -m "Focus $(date -u +%Y-%m-%d)"
+          git push

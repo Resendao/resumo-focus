@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)", "Bash(python3:*)", "Bash(quarto:*)", "Bash(pip:*)",
+      "Bash(git add:*)", "Bash(git commit:*)",
+      "Read(**)", "Write(**)", "Edit(**)"
+    ],
+    "ask":  ["Bash(git push:*)", "Bash(gh:*)"],
+    "deny": ["Bash(rm:*)", "Bash(sudo:*)", "Bash(curl:*)"]
+  },
+  
+    "hooks": {
+    "PostToolUse": [{
+      "matcher": "Task",
+      "hooks": [{
+        "type": "command",
+        "command": "jq -c '{ts: now, agent: .tool_input.subagent_type, prompt: .tool_input.prompt}' >> logs/execucao.jsonl"
+      }]
+    }]
+  }
+}
+
