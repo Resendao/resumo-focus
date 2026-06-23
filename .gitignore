@@ -2,5 +2,6 @@ __pycache__/
 .pytest_cache/
 *.pyc
 .env
+.env.*
 
 # output/focus/ é versionado de propósito — não ignorar
