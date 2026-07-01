@@ -18,23 +18,37 @@ _HEADERS = {
     )
 }
 
+# Janela de busca: cobre feriados, atrasos e rotinas que rodam com defasagem
+_TENTATIVAS = 14
+
 
 def ultima_segunda(hoje: date) -> date:
-    """Retorna a segunda-feira estritamente anterior a `hoje`.
+    """Retorna a segunda-feira mais próxima anterior ou igual a `hoje`.
 
-    Se hoje já é segunda-feira, retrocede para a semana passada.
+    Diferente da versão anterior, aceita HOJE se for segunda-feira — útil
+    quando a rotina roda na própria segunda-feira à tarde (após publicação).
+    Para evitar pegar uma edição do mesmo dia antes da publicação, o caller
+    pode passar `hoje - timedelta(days=1)` explicitamente.
     """
-    # Dias até a segunda anterior: weekday() → 0=seg, 6=dom
-    dias_atras = hoje.weekday() + 7 if hoje.weekday() == 0 else hoje.weekday()
+    dias_atras = hoje.weekday()  # 0 = seg (retorna hoje), 1 = ter (retorna ontem), ...
     return hoje - timedelta(days=dias_atras)
 
 
-def baixar(dest: str | Path) -> tuple[date, Path]:
+def _arquivo_local(dest: Path, data: date) -> Path | None:
+    """Retorna o caminho se já temos o PDF desta data em disco."""
+    caminho = dest / f"focus_{data.strftime('%Y-%m-%d')}.pdf"
+    return caminho if caminho.exists() else None
+
+
+def baixar(dest: str | Path, forcar: bool = False) -> tuple[date, Path]:
     """Baixa o PDF Focus mais recente para a pasta `dest`.
 
-    Parte da última segunda-feira e recua dia a dia até 7 tentativas
-    (cobre feriados e datas sem publicação). Valida que o arquivo é PDF
-    verificando os bytes iniciais (%PDF). Salva como focus_AAAA-MM-DD.pdf.
+    Antes de baixar, verifica se o PDF mais recente já existe no disco
+    (evita re-downloads desnecessários e torna a rotina idempotente).
+
+    Parte da última segunda-feira e recua _TENTATIVAS dias (padrão 14),
+    cobrindo feriados, atrasos e rotinas que rodam com mais de uma semana
+    de defasagem. Valida que o arquivo é PDF pelos bytes iniciais (%PDF).
 
     Retorna (data_da_publicacao, caminho_do_arquivo).
     Levanta RuntimeError se nenhuma tentativa funcionar.
@@ -42,30 +56,38 @@ def baixar(dest: str | Path) -> tuple[date, Path]:
     dest = Path(dest)
     dest.mkdir(parents=True, exist_ok=True)
 
-    data_tentativa = ultima_segunda(date.today())
+    # Ponto de partida: segunda-feira desta semana (ou a anterior se hoje < terça)
+    data_inicio = ultima_segunda(date.today())
 
-    for tentativa in range(7):
+    # Verifica cache local antes de qualquer download
+    if not forcar:
+        for d in range(_TENTATIVAS * 7):
+            data_check = data_inicio - timedelta(days=d)
+            existente = _arquivo_local(dest, data_check)
+            if existente:
+                return data_check, existente
+
+    # Download: varre _TENTATIVAS dias a partir da segunda mais recente
+    data_tentativa = data_inicio
+    for _ in range(_TENTATIVAS):
         url = _URL_BASE.format(data=data_tentativa.strftime("%Y%m%d"))
 
         try:
             resposta = requests.get(url, headers=_HEADERS, timeout=30)
         except requests.RequestException:
-            # Erro de rede: tenta o dia anterior
             data_tentativa -= timedelta(days=1)
             continue
 
-        # Aceita apenas HTTP 200 com conteúdo PDF válido
         if resposta.status_code == 200 and resposta.content[:4] == b"%PDF":
             nome_arquivo = f"focus_{data_tentativa.strftime('%Y-%m-%d')}.pdf"
             caminho = dest / nome_arquivo
             caminho.write_bytes(resposta.content)
             return data_tentativa, caminho
 
-        # PDF não encontrado nesta data: recua um dia
         data_tentativa -= timedelta(days=1)
 
     raise RuntimeError(
-        "Nenhum PDF do Focus encontrado nas últimas 7 tentativas. "
+        f"Nenhum PDF do Focus encontrado nas últimas {_TENTATIVAS} tentativas. "
         "Verifique a conexão ou se houve mudança na URL do BCB."
     )
 

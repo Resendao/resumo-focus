@@ -1,3 +1,37 @@
+# LangChain + adaptadores dos três provedores
+langchain==0.3.7
+langchain-google-genai==2.0.7
+langchain-anthropic==0.3.3
+langchain-openai==0.3.0
+
+# Saída estruturada
+pydantic==2.9.2
+
+# Coleta e limpeza das atas
 requests==2.32.3
-pdfplumber==0.11.4
+beautifulsoup4==4.12.3
+lxml==5.3.0
+
+# Análise de dados
+pandas==2.2.3
+numpy==1.26.4
+
+# Econometria e ML
+statsmodels==0.14.4
+scikit-learn==1.5.2
+
+# BCB (Selic SGS 432)
+python-bcb==0.3.1
+
+# Gráficos estilo ggplot
+plotnine==0.13.6
+
+# Quarto renderizar Python
+jupyter==1.1.1
+ipykernel==6.29.5
+
+# Variáveis de ambiente
+python-dotenv==1.0.1
+
+# Testes
 pytest==8.3.3

@@ -4,4 +4,15 @@ __pycache__/
 .env
 .env.*
 
+# ambientes virtuais
+.venv/
+
+# Quarto
+.quarto/
+*_files/
+output/paper/
+
+# dados brutos pesados — versionar só processados
+data/raw/*.pdf
+
 # output/focus/ é versionado de propósito — não ignorar
