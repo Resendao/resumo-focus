@@ -68,3 +68,9 @@
 - Reunião 277 (2026-03-18): RateLimitError: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}
 - Reunião 278 (2026-04-29): RateLimitError: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}
 - Reunião 279 (2026-06-17): RateLimitError: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}
+
+## extrair_texto — 2026-07-01 16:49
+- pdfplumber: ModuleNotFoundError _cffi_backend / pyo3 PanicException ao carregar cryptography (conflito lib do ambiente). Pulando extração de texto do PDF; prosseguindo com fonte primária OData (gerar_contexto_focus.py).
+
+## gerar_contexto_focus — 2026-07-01 16:50
+- OData BCB (Expectativas) inacessível: https://olinda.bcb.gov.br/... retornou 403 Forbidden no proxy de saída (bloqueio de política de rede do ambiente, não é erro transitório). Script parado sem gerar data/contexto-focus.md. Host www.bcb.gov.br (usado por baixar_focus.py) funcionou normalmente, indicando bloqueio específico ao host olinda.bcb.gov.br.
