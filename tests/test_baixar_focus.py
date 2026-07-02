@@ -29,10 +29,11 @@ def test_ultima_segunda_terca():
 
 
 def test_ultima_segunda_quando_hoje_e_segunda():
-    # Segunda-feira → deve recuar para a segunda da semana anterior
+    # Segunda-feira → retorna a própria data (comportamento documentado:
+    # a rotina pode rodar na segunda à tarde, após a publicação do Focus)
     segunda = date(2026, 6, 8)          # segunda
     resultado = ultima_segunda(segunda)
-    assert resultado == date(2026, 6, 1)
+    assert resultado == segunda
 
 
 def test_ultima_segunda_domingo():
@@ -42,7 +43,8 @@ def test_ultima_segunda_domingo():
 
 
 def test_ultima_segunda_sempre_anterior_e_segunda():
-    # Varredura de 60 dias: o retorno deve ser sempre segunda E menor que a data dada
+    # Varredura de 60 dias: o retorno deve ser sempre segunda E ≤ data dada
+    # (igual apenas quando a própria data é segunda-feira)
     inicio = date(2026, 4, 1)
     for i in range(60):
         dia = inicio + timedelta(days=i)
@@ -50,9 +52,11 @@ def test_ultima_segunda_sempre_anterior_e_segunda():
         assert resultado.weekday() == 0, (
             f"{dia} retornou {resultado} que não é segunda-feira"
         )
-        assert resultado < dia, (
-            f"{dia} retornou {resultado} que não é estritamente anterior"
+        assert resultado <= dia, (
+            f"{dia} retornou {resultado} que é posterior à data dada"
         )
+        if dia.weekday() != 0:
+            assert resultado < dia
 
 
 # ---------------------------------------------------------------------------

@@ -481,6 +481,77 @@ def walk_forward(
 
 
 # ---------------------------------------------------------------------------
+# Exercício 4 — Modelo multivariado: tom + expectativas do Focus
+# ---------------------------------------------------------------------------
+
+_CSV_EXPECTATIVAS = Path("output/focus/expectativas_reunioes.csv")
+
+
+def calibrar_multivariado(
+    df_scores: pd.DataFrame | None = None,
+    df_exp: pd.DataFrame | None = None,
+    csv_scores: Path = _CSV_CONSOLIDADO,
+    csv_exp: Path = _CSV_EXPECTATIVAS,
+) -> pd.DataFrame:
+    """
+    Compara três especificações com erros-padrão HC3:
+
+        tom                : ΔSelic = α + β₁·score_medio
+        desvio_meta        : ΔSelic = α + β₂·desvio_meta
+        tom + desvio_meta  : ΔSelic = α + β₁·score_medio + β₂·desvio_meta
+
+    desvio_meta = E[IPCA ano seguinte] − meta CMN (Focus, véspera da reunião)
+    — proxy de desancoragem no horizonte relevante. Se o tom da ata carrega
+    informação além do que o Focus já precifica, β₁ segue significativo na
+    especificação conjunta.
+
+    Colunas: modelo, n, alpha, beta_score, p_score, beta_desvio, p_desvio,
+             r2, r2_adj, aic
+    """
+    if df_scores is None:
+        df_scores = pd.read_csv(csv_scores)
+    if df_exp is None:
+        df_exp = pd.read_csv(csv_exp)
+
+    df = df_scores.merge(
+        df_exp[["nro_reuniao", "desvio_meta"]], on="nro_reuniao", how="left"
+    )
+    df["delta_selic"] = pd.to_numeric(df["delta_selic"], errors="coerce")
+
+    especificacoes = {
+        "tom":               ["score_medio"],
+        "desvio_meta":       ["desvio_meta"],
+        "tom + desvio_meta": ["score_medio", "desvio_meta"],
+    }
+
+    rows = []
+    for nome, regs in especificacoes.items():
+        sub = df[["delta_selic", *regs]].dropna()
+        if len(sub) < _MIN_OBS + len(regs) - 1:
+            log.warning("Modelo %s: %d obs — insuficiente. Pulando.", nome, len(sub))
+            continue
+
+        X = sm.add_constant(sub[regs].values, has_constant="add")
+        res = sm.OLS(sub["delta_selic"].values, X).fit(cov_type="HC3")
+
+        idx = {r: i + 1 for i, r in enumerate(regs)}
+        rows.append({
+            "modelo":      nome,
+            "n":           int(res.nobs),
+            "alpha":       res.params[0],
+            "beta_score":  res.params[idx["score_medio"]] if "score_medio" in idx else np.nan,
+            "p_score":     res.pvalues[idx["score_medio"]] if "score_medio" in idx else np.nan,
+            "beta_desvio": res.params[idx["desvio_meta"]] if "desvio_meta" in idx else np.nan,
+            "p_desvio":    res.pvalues[idx["desvio_meta"]] if "desvio_meta" in idx else np.nan,
+            "r2":          res.rsquared,
+            "r2_adj":      res.rsquared_adj,
+            "aic":         res.aic,
+        })
+
+    return pd.DataFrame(rows)
+
+
+# ---------------------------------------------------------------------------
 # Impressão formatada — robustez (exercícios 2 e 3)
 # ---------------------------------------------------------------------------
 

@@ -1,4 +1,4 @@
-# Contexto: Focus — 2026-07-01
+# Contexto: Focus — 2026-07-02
 
 > Gerado automaticamente via python-bcb (OData BCB). Use como âncora de expectativas de mercado.
 
@@ -19,4 +19,4 @@
 - **Câmbio 2026**: R$ 5.20/US$
 - **PIB 2026**: 1.97%
 
-_Fonte: BCB Focus OData · Referência: 2026-07-01_
+_Fonte: BCB Focus OData · Referência: 2026-07-02_

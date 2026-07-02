@@ -291,6 +291,24 @@ def _salvar_cache_csv(cache: dict, path: Path) -> None:
     pd.DataFrame(rows).to_csv(path, index=False, float_format="%.2f")
 
 
+def _cache_df(path: Path) -> pd.DataFrame:
+    """
+    Cache CSV de um provedor como DataFrame(nro_reuniao, data, score) —
+    SEM chamar a API. Arquivo ausente → DataFrame vazio com dtypes corretos
+    (chaves int/str), para que o merge outer de montar_tabela funcione.
+    """
+    if not path.exists():
+        return pd.DataFrame({
+            "nro_reuniao": pd.Series(dtype="int64"),
+            "data":        pd.Series(dtype="str"),
+            "score":       pd.Series(dtype="float64"),
+        })
+    return pd.DataFrame(
+        sorted(_carregar_cache_csv(path).values(), key=lambda x: x["nro_reuniao"]),
+        columns=["nro_reuniao", "data", "score"],
+    )
+
+
 def _registrar_erros_scoring(erros: list[str], provedor: str = "gemini") -> None:
     """Appenda erros de scoring em logs/erros.md sem derrubar o pipeline."""
     Path("logs").mkdir(exist_ok=True)
@@ -321,6 +339,7 @@ def _loop_inferencia(
     cache: dict,
     cache_path: Path,
     label: str,
+    pausa: float = 0.0,
 ) -> pd.DataFrame:
     """
     Loop interno compartilhado por pontuar_gemini / pontuar_claude / pontuar_openai.
@@ -332,6 +351,9 @@ def _loop_inferencia(
     cache        : dict carregado por _carregar_cache_csv (modificado in-place)
     cache_path   : destino do CSV (salvo só se novos > 0)
     label        : string de cabeçalho, ex. "Gemini · gemini-flash-lite-latest"
+    pausa        : segundos de espera após cada chamada NOVA à API (cache hits
+                   não pausam) — protege contra rate limit por minuto no
+                   free tier (Gemini Flash Lite: ~15 RPM → pausa 4.0)
 
     Estratégia de cache
     -------------------
@@ -369,6 +391,9 @@ def _loop_inferencia(
             erros.append(msg)
             log.error(msg)
             print(f"{nro:>5}  {data:<12}  {'ERRO':>6}  LLM    ✗  {type(exc).__name__}")
+        if pausa > 0:
+            import time
+            time.sleep(pausa)
 
     print("─" * 44)
     if novos > 0:
@@ -441,11 +466,12 @@ def pontuar_gemini(
     cache_path: Path = _CACHE_GEMINI,
     model: str = "gemini-flash-lite-latest",
     temperature: float = 0.0,
+    pausa: float = 0.0,
 ) -> pd.DataFrame:
     """Pontua atas com Gemini. Cache incremental em scores_gemini_cache.csv."""
     cache = _carregar_cache_csv(cache_path)
     scorer = _com_retry(criar_scorer_gemini(model=model, temperature=temperature))
-    return _loop_inferencia(docs, scorer, cache, cache_path, f"Gemini · {model}")
+    return _loop_inferencia(docs, scorer, cache, cache_path, f"Gemini · {model}", pausa=pausa)
 
 
 def pontuar_claude(
@@ -453,6 +479,7 @@ def pontuar_claude(
     cache_path: Path = _CACHE_CLAUDE,
     model: str = "claude-haiku-4-5-20251001",
     temperature: float = 0.0,
+    pausa: float = 0.0,
 ) -> pd.DataFrame:
     """
     Pontua atas com Claude Haiku. Cache incremental em scores_claude_cache.csv.
@@ -473,7 +500,7 @@ def pontuar_claude(
     """
     cache = _carregar_cache_csv(cache_path)
     scorer = _com_retry(criar_scorer_claude(model=model, temperature=temperature))
-    return _loop_inferencia(docs, scorer, cache, cache_path, f"Claude · {model}")
+    return _loop_inferencia(docs, scorer, cache, cache_path, f"Claude · {model}", pausa=pausa)
 
 
 def pontuar_openai(
@@ -481,20 +508,34 @@ def pontuar_openai(
     cache_path: Path = _CACHE_OPENAI,
     model: str = "gpt-4.1-mini",
     temperature: float = 0.0,
+    pausa: float = 0.0,
 ) -> pd.DataFrame:
     """Pontua atas com GPT-4.1-mini. Cache incremental em scores_openai_cache.csv."""
     cache = _carregar_cache_csv(cache_path)
     scorer = _com_retry(criar_scorer_openai(model=model, temperature=temperature))
-    return _loop_inferencia(docs, scorer, cache, cache_path, f"OpenAI · {model}")
+    return _loop_inferencia(docs, scorer, cache, cache_path, f"OpenAI · {model}", pausa=pausa)
 
 
 # ---------------------------------------------------------------------------
 # Tabela consolidada — três provedores + Selic
 # ---------------------------------------------------------------------------
 
-def montar_tabela(docs: list) -> pd.DataFrame:
+def montar_tabela(
+    docs: list,
+    provedores: tuple[str, ...] = ("gemini", "claude", "openai"),
+    pausa: float = 0.0,
+) -> pd.DataFrame:
     """
-    Roda os três provedores e devolve uma única tabela alinhada por nro_reuniao.
+    Roda os provedores selecionados e devolve uma única tabela alinhada
+    por nro_reuniao.
+
+    Parâmetros
+    ----------
+    provedores : provedores que podem chamar a API nesta execução. Um provedor
+                 fora da lista NÃO faz chamadas (evita rajada de erros de
+                 billing quando a chave está sem crédito) — apenas lê o cache
+                 CSV existente, preservando a coluna no consolidado.
+    pausa      : segundos entre chamadas novas de LLM (ver _loop_inferencia).
 
     Colunas de saída
     ----------------
@@ -524,10 +565,11 @@ def montar_tabela(docs: list) -> pd.DataFrame:
     # 1. Lexico (local, zero API, sempre disponivel)
     df_lex = pontuar_lexico_batch(docs)[["nro_reuniao", "data", "score_lexico"]]
 
-    # 2. Pontua com cada LLM (usa cache; so chama API para atas novas)
-    df_g = pontuar_gemini(docs)
-    df_c = pontuar_claude(docs)
-    df_o = pontuar_openai(docs)
+    # 2. Pontua com cada LLM habilitado (usa cache; so chama API para atas
+    #    novas). Provedor desabilitado: so le o cache CSV, sem tocar a API.
+    df_g = pontuar_gemini(docs, pausa=pausa) if "gemini" in provedores else _cache_df(_CACHE_GEMINI)
+    df_c = pontuar_claude(docs, pausa=pausa) if "claude" in provedores else _cache_df(_CACHE_CLAUDE)
+    df_o = pontuar_openai(docs, pausa=pausa) if "openai" in provedores else _cache_df(_CACHE_OPENAI)
 
     # 3. Merge outer por (nro_reuniao, data)
     dfs = [
