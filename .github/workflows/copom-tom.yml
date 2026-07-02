@@ -1,0 +1,48 @@
+name: Copom — Índice de Tom
+
+# Atas do Copom são publicadas na terça-feira seguinte à reunião, 8h BRT.
+# Roda toda terça 9h BRT: nas semanas sem ata nova o pipeline é idempotente
+# (tudo vem de cache, nenhuma chamada de API, nenhum commit).
+
+on:
+  schedule:
+    - cron: "0 12 * * 2"   # terças 12h UTC (9h BRT)
+  workflow_dispatch:        # disparo manual pelo GitHub
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pipelines-bcb      # nunca em paralelo com o pipeline do Focus
+  cancel-in-progress: false
+
+jobs:
+  indice-tom:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Atualizar Índice de Tom (atas + scores + calibração + contexto)
+        # Sem o secret GOOGLE_API_KEY o script recompõe tudo do cache e
+        # registra em logs/erros.md que a ata nova ficou sem score — o job
+        # não falha. Com o secret, pontua só as atas pendentes (Gemini).
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: python scripts/atualizar_tom.py
+
+      - name: Commitar arquivos gerados
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add atas_cache.json data/raw/*.txt selic_cache.json \
+                  data/focus_expectativas_raw.csv data/contexto-tom.md \
+                  output/scores/*.csv output/focus/expectativas_reunioes.csv \
+                  logs/erros.md
+          git diff --cached --quiet || git commit -m "Tom Copom $(date -u +%Y-%m-%d): atualização automática"
+          git pull --rebase origin main
+          git push

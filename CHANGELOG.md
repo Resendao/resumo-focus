@@ -25,6 +25,18 @@ O projeto adere a [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Adicionado
+- `.github/workflows/copom-tom.yml` — automação semanal do Índice de Tom
+  (terças 9h BRT, dia de publicação de ata): `scripts/atualizar_tom.py`
+  coleta ata nova, pontua só o que falta (Gemini via secret GOOGLE_API_KEY;
+  sem o secret, recompõe do cache e registra aviso), recalibra e regenera
+  `data/contexto-tom.md`. Idempotente: semana sem ata nova = zero API,
+  zero commit.
+- `focus-download.yml` estendido: atualiza `data/focus_expectativas_raw.csv`
+  e `output/focus/expectativas_reunioes.csv` toda segunda; passo do
+  contexto-focus tolera o 403 do olinda sem derrubar o job; workflows
+  compartilham grupo de concorrência para não empurrarem em paralelo.
+
 ### Planejado
 - Recarregar créditos Claude e OpenAI; popular colunas score_claude, score_openai
   (basta rodar `montar_tabela(docs)` — o cache incremental preenche só o que falta)
