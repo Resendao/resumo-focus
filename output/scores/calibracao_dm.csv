@@ -1,2 +1,4 @@
 par,n_comum,mse_1,mse_2,dm_hln,p,sig,melhor
 lexico vs gemini,47,0.191276,0.21172,-0.416,0.6791,,lexico
+lexico vs claude,47,0.191276,0.203517,-0.249,0.8046,,lexico
+gemini vs claude,47,0.21172,0.203517,0.654,0.5165,,claude

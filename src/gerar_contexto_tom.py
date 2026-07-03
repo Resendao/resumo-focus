@@ -65,8 +65,13 @@ def montar_md(
     """
     scores = scores.sort_values("nro_reuniao").reset_index(drop=True)
     ultimo = scores.iloc[-1]
-    tom_atual = ultimo["score_medio"]
-    mm3 = scores["score_medio"].tail(3).mean()
+
+    # Índice oficial: score do Claude; recua para score_medio se ausente
+    usa_claude = "score_claude" in scores.columns and not pd.isna(ultimo["score_claude"])
+    col_indice = "score_claude" if usa_claude else "score_medio"
+    rotulo = "Claude" if usa_claude else "média dos LLMs"
+    tom_atual = ultimo[col_indice]
+    mm3 = scores[col_indice].tail(3).mean()
 
     linhas = [
         f"# Contexto: Índice de Tom do Copom — reunião {int(ultimo['nro_reuniao'])} "
@@ -78,7 +83,7 @@ def montar_md(
         "",
         "## Sinal atual",
         "",
-        f"- **Tom da última ata**: {_fmt(tom_atual, sinal=True)} "
+        f"- **Tom da última ata ({rotulo})**: {_fmt(tom_atual, sinal=True)} "
         f"({_classificar(tom_atual)})",
         f"- **Média móvel (3 reuniões)**: {_fmt(mm3, sinal=True)} "
         f"({_classificar(mm3)})",
@@ -145,7 +150,7 @@ def montar_md(
     for _, r in scores.tail(8).iterrows():
         linhas.append(
             f"| {int(r['nro_reuniao'])} | {r['data']} | "
-            f"{_fmt(r['score_medio'], sinal=True)} | "
+            f"{_fmt(r[col_indice], sinal=True)} | "
             f"{_fmt(r.get('score_lexico'), sinal=True)} | "
             f"{_fmt(r.get('selic'))} | {_fmt(r.get('delta_selic'), sinal=True)} |"
         )

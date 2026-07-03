@@ -35,10 +35,21 @@ def _coefs() -> pd.DataFrame:
 
 
 def test_montar_md_contem_ultimo_score_e_reuniao():
+    # score_claude ausente (NaN) → recua para score_medio
     md = montar_md(_scores(), _coefs(), None)
     assert "279" in md
     assert "+1.75" in md         # último score_medio, com sinal
     assert "hawkish" in md.lower()
+
+
+def test_montar_md_prioriza_score_claude_quando_disponivel():
+    # O índice oficial é o Claude: com score_claude preenchido, o headline
+    # usa ele (+2.50), não o score_medio (+1.75)
+    scores = _scores()
+    scores["score_claude"] = [1.00, 2.25, 2.50]
+    md = montar_md(scores, _coefs(), None)
+    assert "+2.50" in md
+    assert "Claude" in md
 
 
 def test_montar_md_previsao_implicita_usa_calibracao():

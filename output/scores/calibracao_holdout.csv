@@ -1,3 +1,4 @@
 modelo,n_train,n_test,rmse_treino,rmse_teste,mae_teste
 lexico,41,6,0.45622,0.29071,0.24803
 gemini,41,6,0.44605,0.58603,0.52733
+claude,41,6,0.41933,0.68275,0.62669

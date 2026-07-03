@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from atualizar_tom import atas_pendentes, escolher_provedores
+from atualizar_tom import atas_pendentes, formatar_pendentes
 
 
 class _Doc:
@@ -23,15 +23,7 @@ def test_atas_pendentes_vazio_quando_tudo_cacheado():
     assert atas_pendentes(docs, {278, 279}) == []
 
 
-def test_escolher_provedores_com_pendencia_e_chave():
-    assert escolher_provedores(pendentes=[280], tem_chave=True) == ("gemini",)
-
-
-def test_escolher_provedores_sem_pendencia_nao_chama_api():
-    # Nada novo → nem com chave disponível deve tocar a API
-    assert escolher_provedores(pendentes=[], tem_chave=True) == ()
-
-
-def test_escolher_provedores_pendencia_sem_chave():
-    # Ata nova mas sem GOOGLE_API_KEY (ex.: secret ausente no CI) → só cache
-    assert escolher_provedores(pendentes=[280], tem_chave=False) == ()
+def test_formatar_pendentes_para_github_output():
+    # Saída do modo --detectar: números separados por espaço, vazio se nada
+    assert formatar_pendentes([280, 281]) == "280 281"
+    assert formatar_pendentes([]) == ""

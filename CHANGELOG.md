@@ -25,7 +25,39 @@ O projeto adere a [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+---
+
+## [0.3.0] — 2026-07-02
+
+Claude vira o scorer oficial do Índice de Tom; Gemini congelado como
+baseline histórico de comparação (sem novas chamadas em nenhum ambiente).
+
 ### Adicionado
+- `score_claude` completo para as 48 atas (232–279), pontuado por
+  **Claude (claude-fable-5) via Claude Code** com a mesma rubrica
+  INSTRUCOES_SISTEMA — 8 lotes independentes de 6 atas. **Nota
+  metodológica**: difere do desenho original (haiku-4.5 via API); o modelo
+  e o mecanismo devem ser citados no paper. Correlação com o Gemini: 0,96.
+- Calibração Claude: β = 0,334 (p < 0,001), R² = 0,367, n = 47; multivariado
+  tom + desvio_meta sobe para R² = 0,425 com ambos os regressores
+  significativos (p_score < 0,001; p_desvio = 0,030)
+- `.claude/commands/pontuar-atas.md` — comando para pontuar atas pendentes
+  com o Claude (local via Claude Code ou no CI via claude-code-action)
+- `copom-tom.yml`: scoring no CI via `anthropics/claude-code-action@v1`,
+  autenticado por CLAUDE_CODE_OAUTH_TOKEN (assinatura, `claude setup-token`)
+  ou ANTHROPIC_API_KEY; sem secret, a pendência é registrada e o job segue
+- `scripts/atualizar_tom.py --detectar` — lista atas sem score Claude
+  (usado pelo CI para decidir se chama o claude-code-action)
+
+### Alterado
+- **Índice oficial** (contexto do hub, headline e tabela): score_claude,
+  com fallback para score_medio quando ausente
+- `montar_tabela`: default `provedores=()` — nenhuma chamada de API de LLM
+  sem pedido explícito; consolidação é 100% cache
+- Gemini: coluna score_gemini congelada como baseline de comparação no
+  paper; nenhuma chamada nova ao Gemini em pipeline algum
+
+### Adicionado (automação — antes em Não lançado)
 - `.github/workflows/copom-tom.yml` — automação semanal do Índice de Tom
   (terças 9h BRT, dia de publicação de ata): `scripts/atualizar_tom.py`
   coleta ata nova, pontua só o que falta (Gemini via secret GOOGLE_API_KEY;

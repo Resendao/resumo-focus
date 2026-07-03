@@ -522,19 +522,21 @@ def pontuar_openai(
 
 def montar_tabela(
     docs: list,
-    provedores: tuple[str, ...] = ("gemini", "claude", "openai"),
+    provedores: tuple[str, ...] = (),
     pausa: float = 0.0,
 ) -> pd.DataFrame:
     """
-    Roda os provedores selecionados e devolve uma única tabela alinhada
+    Consolida os scores dos provedores e devolve uma única tabela alinhada
     por nro_reuniao.
 
     Parâmetros
     ----------
-    provedores : provedores que podem chamar a API nesta execução. Um provedor
-                 fora da lista NÃO faz chamadas (evita rajada de erros de
-                 billing quando a chave está sem crédito) — apenas lê o cache
-                 CSV existente, preservando a coluna no consolidado.
+    provedores : provedores que podem chamar a API nesta execução. O DEFAULT
+                 é () — nenhuma chamada externa: tudo vem dos caches CSV,
+                 preservando as colunas no consolidado. O scorer oficial
+                 (Claude) roda via Claude Code (/pontuar-atas ou
+                 claude-code-action), que grava direto no cache. Passe
+                 ("gemini",) etc. explicitamente para pontuar via API.
     pausa      : segundos entre chamadas novas de LLM (ver _loop_inferencia).
 
     Colunas de saída

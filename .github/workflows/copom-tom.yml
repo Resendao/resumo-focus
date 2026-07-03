@@ -2,7 +2,14 @@ name: Copom — Índice de Tom
 
 # Atas do Copom são publicadas na terça-feira seguinte à reunião, 8h BRT.
 # Roda toda terça 9h BRT: nas semanas sem ata nova o pipeline é idempotente
-# (tudo vem de cache, nenhuma chamada de API, nenhum commit).
+# (tudo vem de cache, nenhuma chamada externa, nenhum commit).
+#
+# Scorer oficial: CLAUDE via claude-code-action, usando o comando
+# .claude/commands/pontuar-atas.md (o mesmo prompt do scoring histórico).
+# Autenticação: secret CLAUDE_CODE_OAUTH_TOKEN (assinatura Claude —
+# gere com `claude setup-token`) OU ANTHROPIC_API_KEY (créditos de API).
+# Sem nenhum dos dois, a ata nova fica pendente (registrada em logs/erros.md)
+# e pode ser pontuada localmente com /pontuar-atas — o job não falha.
 
 on:
   schedule:
@@ -27,12 +34,41 @@ jobs:
       - name: Instalar dependências
         run: pip install -r requirements.txt
 
-      - name: Atualizar Índice de Tom (atas + scores + calibração + contexto)
-        # Sem o secret GOOGLE_API_KEY o script recompõe tudo do cache e
-        # registra em logs/erros.md que a ata nova ficou sem score — o job
-        # não falha. Com o secret, pontua só as atas pendentes (Gemini).
+      - name: Detectar atas sem score Claude
+        id: detecta
+        run: |
+          PEND=$(python scripts/atualizar_tom.py --detectar)
+          echo "pendentes=$PEND" >> "$GITHUB_OUTPUT"
+          echo "Atas pendentes de score: ${PEND:-nenhuma}"
+
+      - name: Verificar autenticação Claude disponível
+        id: auth
         env:
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          OAUTH: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          APIKEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$OAUTH" ] || [ -n "$APIKEY" ]; then
+            echo "tem=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tem=false" >> "$GITHUB_OUTPUT"
+            echo "Sem CLAUDE_CODE_OAUTH_TOKEN/ANTHROPIC_API_KEY — scoring fica para o /pontuar-atas local."
+          fi
+
+      - name: Pontuar atas novas com o Claude
+        if: steps.detecta.outputs.pendentes != '' && steps.auth.outputs.tem == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Execute o comando .claude/commands/pontuar-atas.md deste repositório:
+            pontue as atas pendentes (${{ steps.detecta.outputs.pendentes }})
+            seguindo exatamente a rubrica do arquivo e atualize
+            output/scores/scores_claude_cache.csv. NÃO commite — o commit é
+            feito por um passo posterior do workflow.
+          claude_args: "--allowedTools Bash,Read,Write,Edit,Glob,Grep"
+
+      - name: Consolidar, recalibrar e regenerar contexto
         run: python scripts/atualizar_tom.py
 
       - name: Commitar arquivos gerados
