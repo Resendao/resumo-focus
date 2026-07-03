@@ -35,10 +35,10 @@ from urllib3.util.retry import Retry
 _URL_SGS     = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados"
 _CACHE_PATH  = Path("selic_cache.json")
 
-# Data de início: um ano antes da reunião 232 (ago/2020) para garantir
-# que a reunião anterior (231, jul/2020) tenha Selic no cache e
-# delta_selic[232] seja calculado corretamente.
-_DATA_INICIO_PADRAO = "2019-01-01"
+# Data de início: um ano antes da reunião 200 (jun/2016) para garantir
+# que a reunião anterior (199) tenha Selic no cache e delta_selic[200]
+# seja calculado corretamente.
+_DATA_INICIO_PADRAO = "2015-06-01"
 
 log = logging.getLogger(__name__)
 
@@ -93,6 +93,27 @@ def _salvar_cache(cache: dict[str, float]) -> None:
 # Coleta da série SGS 432 com cache incremental
 # ---------------------------------------------------------------------------
 
+def _janelas(inicio: str, fim: str, anos: int = 9) -> list[tuple[str, str]]:
+    """
+    Divide [inicio, fim] em fatias de no máximo `anos` anos.
+
+    A API SGS retorna HTTP 406 para janelas maiores que 10 anos em séries
+    diárias — o backfill de 2015 → hoje precisa ser buscado em pedaços.
+    Fatias são contíguas (o fim de uma é o início da próxima; a sobreposição
+    de 1 dia é absorvida pelo dict do cache).
+    """
+    ini = datetime.strptime(inicio, "%Y-%m-%d").date()
+    fim_d = datetime.strptime(fim, "%Y-%m-%d").date()
+    fatias = []
+    while True:
+        corte = date(ini.year + anos, ini.month, ini.day)
+        if corte >= fim_d:
+            fatias.append((ini.isoformat(), fim_d.isoformat()))
+            return fatias
+        fatias.append((ini.isoformat(), corte.isoformat()))
+        ini = corte
+
+
 def buscar_selic(data_inicio: str = _DATA_INICIO_PADRAO) -> pd.DataFrame:
     """
     Retorna DataFrame (data: datetime64, selic: float) com a meta Selic diária.
@@ -114,30 +135,41 @@ def buscar_selic(data_inicio: str = _DATA_INICIO_PADRAO) -> pd.DataFrame:
 
     # Determina se o cache precisa ser atualizado
     data_max_cache = max(cache.keys()) if cache else ""
-    precisa_fetch  = not cache or data_max_cache < hoje
+    data_min_cache = min(cache.keys()) if cache else ""
+    backfill       = bool(cache) and data_min_cache > data_inicio
+    precisa_fetch  = not cache or data_max_cache < hoje or backfill
 
     if precisa_fetch:
-        # Pede apenas o slice ainda não cacheado (ou tudo, se cache vazio)
-        inicio_fetch = data_max_cache if data_max_cache else data_inicio
+        # Backfill: cache começa depois do início requerido (cobertura
+        # ampliada) → re-baixa o range completo e mescla por data.
+        # Caso normal: pede apenas o slice ainda não cacheado.
+        if backfill:
+            log.info("SGS 432: cache começa em %s > %s — backfill completo.",
+                     data_min_cache, data_inicio)
+            inicio_fetch = data_inicio
+        else:
+            inicio_fetch = data_max_cache if data_max_cache else data_inicio
         log.info("SGS 432: buscando %s → %s...", inicio_fetch, hoje)
         session = _criar_session()
         try:
-            resp = session.get(
-                _URL_SGS,
-                params={
-                    "formato":      "json",
-                    "dataInicial":  _para_bcb(inicio_fetch),
-                    "dataFinal":    _para_bcb(hoje),
-                },
-                timeout=30,
-            )
-            resp.raise_for_status()
-
-            novos = {
-                _para_iso(r["data"]): float(r["valor"].replace(",", "."))
-                for r in resp.json()
-                if r.get("valor") not in (None, "", "null")
-            }
+            novos: dict[str, float] = {}
+            # Fatias de <= 9 anos: a API retorna 406 para janelas > 10 anos
+            for ini_f, fim_f in _janelas(inicio_fetch, hoje):
+                resp = session.get(
+                    _URL_SGS,
+                    params={
+                        "formato":      "json",
+                        "dataInicial":  _para_bcb(ini_f),
+                        "dataFinal":    _para_bcb(fim_f),
+                    },
+                    timeout=30,
+                )
+                resp.raise_for_status()
+                novos.update({
+                    _para_iso(r["data"]): float(r["valor"].replace(",", "."))
+                    for r in resp.json()
+                    if r.get("valor") not in (None, "", "null")
+                })
             qtd_novos = len(set(novos) - set(cache))
             cache.update(novos)
             _salvar_cache(cache)

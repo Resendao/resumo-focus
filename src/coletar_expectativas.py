@@ -34,7 +34,7 @@ _CACHE_RAW  = Path("data/focus_expectativas_raw.csv")
 _CSV_SAIDA  = Path("output/focus/expectativas_reunioes.csv")
 _CSV_SCORES = Path("output/scores/scores_consolidado.csv")
 
-_DATA_INICIO = "2020-01-01"   # cobre a reunião 232 (ago/2020) com folga
+_DATA_INICIO = "2016-01-01"   # cobre a reunião 200 (jun/2016) com folga
 
 _INDICADORES_ANUAIS = ["IPCA", "Selic", "Câmbio", "PIB Total"]
 
@@ -44,7 +44,10 @@ _IPCA_12M = "IPCA_12m"
 # Metas de inflação do CMN por ano-calendário. A partir de 2025 vigora a
 # meta contínua de 3,00% (Resolução CMN 5.108/2023) — vale para qualquer
 # ano futuro sem necessidade de atualização deste dicionário.
-_METAS = {2020: 4.00, 2021: 3.75, 2022: 3.50, 2023: 3.25, 2024: 3.00}
+_METAS = {
+    2016: 4.50, 2017: 4.50, 2018: 4.50, 2019: 4.25,
+    2020: 4.00, 2021: 3.75, 2022: 3.50, 2023: 3.25, 2024: 3.00,
+}
 _META_CONTINUA = 3.00
 _ANO_META_CONTINUA = 2025
 
@@ -185,9 +188,16 @@ def atualizar_cache_raw(cache_path: Path = _CACHE_RAW) -> pd.DataFrame:
     if cache_path.exists():
         antigo = pd.read_csv(cache_path, parse_dates=["Data"])
         if not antigo.empty:
-            # Re-baixa a partir do último dia cacheado (inclusive) para
-            # capturar revisões intradiárias sem duplicar o histórico.
-            data_inicio = antigo["Data"].max().strftime("%Y-%m-%d")
+            if antigo["Data"].min().strftime("%Y-%m-%d") > _DATA_INICIO:
+                # Backfill: o cache começa depois do início requerido (ex.:
+                # cobertura ampliada de 2020 → 2016). Re-baixa o range
+                # completo; o dedup do merge absorve a sobreposição.
+                log.info("Cache começa em %s > %s — backfill completo.",
+                         antigo["Data"].min().date(), _DATA_INICIO)
+            else:
+                # Re-baixa a partir do último dia cacheado (inclusive) para
+                # capturar revisões intradiárias sem duplicar o histórico.
+                data_inicio = antigo["Data"].max().strftime("%Y-%m-%d")
 
     log.info("OData: baixando expectativas a partir de %s...", data_inicio)
     exp = Expectativas()

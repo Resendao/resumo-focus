@@ -74,3 +74,8 @@
 
 ## gerar_contexto_focus — 2026-07-01 16:50
 - OData BCB (Expectativas) inacessível: https://olinda.bcb.gov.br/... retornou 403 Forbidden no proxy de saída (bloqueio de política de rede do ambiente, não é erro transitório). Script parado sem gerar data/contexto-focus.md. Host www.bcb.gov.br (usado por baixar_focus.py) funcionou normalmente, indicando bloqueio específico ao host olinda.bcb.gov.br.
+
+## baixar_atas — 2026-07-03 09:45
+- Reunião 217 (2018-09-19): texto não obtido (atas_detalhes sem textoAta/PDF e Wayback sem snapshot).
+- Reunião 219 (2018-12-12): texto não obtido (atas_detalhes sem textoAta/PDF e Wayback sem snapshot).
+- Reunião 220 (2019-02-06): texto não obtido (atas_detalhes sem textoAta/PDF e Wayback sem snapshot).

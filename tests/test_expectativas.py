@@ -20,6 +20,10 @@ from coletar_expectativas import (
 # ---------------------------------------------------------------------------
 
 def test_meta_inflacao_anos_conhecidos():
+    assert meta_inflacao(2016) == 4.50
+    assert meta_inflacao(2017) == 4.50
+    assert meta_inflacao(2018) == 4.50
+    assert meta_inflacao(2019) == 4.25
     assert meta_inflacao(2020) == 4.00
     assert meta_inflacao(2021) == 3.75
     assert meta_inflacao(2022) == 3.50
@@ -35,7 +39,7 @@ def test_meta_inflacao_meta_continua_futuro():
 
 def test_meta_inflacao_ano_fora_da_cobertura():
     with pytest.raises(ValueError):
-        meta_inflacao(2019)
+        meta_inflacao(2015)
 
 
 # ---------------------------------------------------------------------------

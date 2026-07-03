@@ -32,6 +32,10 @@ from pathlib import Path
 _RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_RAIZ / "src"))
 
+# Cobertura do índice: reunião 200 (jun/2016) em diante — início do formato
+# atual das atas (seções A/B/C, reforma da gestão Goldfajn).
+REUNIAO_INICIAL = 200
+
 log = logging.getLogger("atualizar_tom")
 
 
@@ -75,7 +79,7 @@ def main(argv: list[str] | None = None) -> int:
     import gerar_contexto_tom
 
     # 1. Atas (cache em 2 níveis; baixa só o que não existe)
-    docs = coletar(reuniao_inicial=232)
+    docs = coletar(reuniao_inicial=REUNIAO_INICIAL)
     if not docs:
         log.error("Nenhuma ata obtida — verifique logs/erros.md.")
         return 1

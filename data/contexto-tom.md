@@ -1,6 +1,6 @@
 # Contexto: Índice de Tom do Copom — reunião 279 (2026-06-17)
 
-> Gerado automaticamente a partir de output/scores/ (léxico + LLMs, 48 atas desde 2020-08-05). Escala: −3 (fortemente dovish) a +3 (fortemente hawkish).
+> Gerado automaticamente a partir de output/scores/ (léxico + LLMs, 80 atas desde 2016-07-20). Escala: −3 (fortemente dovish) a +3 (fortemente hawkish).
 
 ## Sinal atual
 
@@ -10,7 +10,7 @@
 
 ## Previsão implícita para a próxima reunião
 
-- **ΔSelic implícita pelo tom atual**: +0.14 p.p. (modelo lexico sobre score +0.00: β̂ = +0.205, R² = 0.41, n = 47)
+- **ΔSelic implícita pelo tom atual**: +0.61 p.p. (modelo claude sobre score +2.50: β̂ = +0.302, R² = 0.58, n = 79)
 - Interpretação: β̂ > 0 significa que tom mais hawkish antecipa ΔSelic mais alta (menos corte / mais alta).
 
 ## Expectativas na véspera da última reunião (Focus)
@@ -32,4 +32,4 @@
 | 278 | 2026-04-29 | +2.25 | +0.00 | 14.75 | -0.25 |
 | 279 | 2026-06-17 | +2.50 | +0.00 | 14.50 | -0.25 |
 
-_Fonte: output/scores/scores_consolidado.csv · Gerado em 2026-07-02_
+_Fonte: output/scores/scores_consolidado.csv · Gerado em 2026-07-03_

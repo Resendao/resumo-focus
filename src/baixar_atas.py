@@ -139,14 +139,28 @@ def _listar_reunioes(session: requests.Session, reuniao_inicial: int) -> list[di
 # Download do HTML de cada ata
 # ---------------------------------------------------------------------------
 
-def _baixar_html(session: requests.Session, nro: int) -> str | None:
+def _extrair_fontes(primeiro: dict) -> tuple[str | None, str | None]:
     """
-    Tenta obter o HTML da ata via /copom/atas_detalhes?nroReuniao={nro}.
+    Decide a fonte do texto a partir do item de atas_detalhes.
+
+    Retorna (html, url_pdf):
+      • html    — conteúdo de textoAta quando não-vazio (reuniões 232+)
+      • url_pdf — urlPdfAta quando textoAta vem None/vazio (era PDF,
+                  reuniões ~200–231, publicadas apenas como PDF)
+    """
+    html = _campo(primeiro, "textoAta", "TextoAta", "Texto", "texto")
+    if html is not None and not str(html).strip():
+        html = None
+    url_pdf = _campo(primeiro, "urlPdfAta", "UrlPdfAta", "urlPdf")
+    return html, url_pdf
+
+
+def _baixar_detalhes(session: requests.Session, nro: int) -> dict | None:
+    """
+    Obtém o item de /copom/atas_detalhes?nro_reuniao={nro}.
 
     O parâmetro correto é nro_reuniao (snake_case).
     Usar nroReuniao (camelCase) retorna HTTP 500 — erro de naming da API do BCB.
-
-    Retorna a string HTML bruta do campo textoAta, ou None em caso de falha.
     """
     # ATENÇÃO: parâmetro snake_case obrigatório — camelCase retorna 500
     resp = session.get(_URL_DETALHE, params={"nro_reuniao": nro}, timeout=30)
@@ -168,11 +182,53 @@ def _baixar_html(session: requests.Session, nro: int) -> str | None:
         log.warning("Reunião %d — conteudo vazio na resposta.", nro)
         return None
 
-    primeiro = conteudo[0] if isinstance(conteudo, list) else conteudo
+    return conteudo[0] if isinstance(conteudo, list) else conteudo
 
-    # textoAta contém o HTML completo da ata; urlPdfAta é ignorado aqui
-    html = _campo(primeiro, "textoAta", "TextoAta", "Texto", "texto")
-    return html
+
+def _baixar_texto_pdf(session: requests.Session, nro: int, url_pdf: str) -> str | None:
+    """
+    Era PDF (reuniões ~200–231): baixa urlPdfAta e extrai o texto com
+    pdfplumber. Retorna texto puro ou None em caso de falha.
+    """
+    try:
+        import pdfplumber
+    except Exception as exc:
+        log.warning("Reunião %d — pdfplumber indisponível (%s).", nro, exc)
+        return None
+
+    import io as _io
+
+    try:
+        resp = session.get(url_pdf, timeout=60)
+        resp.raise_for_status()
+        if resp.content[:4] != b"%PDF":
+            log.warning("Reunião %d — urlPdfAta não devolveu um PDF.", nro)
+            return None
+    except Exception as exc:
+        log.warning("Reunião %d — falha ao baixar PDF (%s).", nro, exc)
+        return None
+
+    texto = None
+    try:
+        with pdfplumber.open(_io.BytesIO(resp.content)) as pdf:
+            texto = "\n".join(p.extract_text() or "" for p in pdf.pages)
+    except Exception as exc:
+        # Alguns PDFs do BCB (~2018) têm dicionários malformados que o
+        # pdfminer rejeita ("Invalid dictionary construct"); o pypdf é
+        # tolerante a essas estruturas — segundo motor de extração.
+        log.info("Reunião %d — pdfplumber falhou (%s); tentando pypdf.", nro, exc)
+        try:
+            from pypdf import PdfReader
+            reader = PdfReader(_io.BytesIO(resp.content))
+            texto = "\n".join(p.extract_text() or "" for p in reader.pages)
+        except Exception as exc2:
+            log.warning("Reunião %d — falha ao extrair PDF (%s).", nro, exc2)
+            return None
+
+    # Mesma normalização aplicada ao caminho HTML
+    texto = re.sub(r"[ \t]+", " ", texto)
+    texto = re.sub(r"\n{3,}", "\n\n", texto)
+    return texto.strip()
 
 # ---------------------------------------------------------------------------
 # Limpeza do HTML com BeautifulSoup
@@ -431,21 +487,30 @@ def coletar(reuniao_inicial: int = 232) -> list[Document]:
 
         # ── Download do BCB ─────────────────────────────────────────────────
         log.info("Reunião %d (%s): baixando...", nro, data)
-        html_bruto = _baixar_html(session, nro)
+        texto_completo = None
+        detalhes = _baixar_detalhes(session, nro)
 
-        if html_bruto is None:
+        if detalhes is not None:
+            html_bruto, url_pdf = _extrair_fontes(detalhes)
+            if html_bruto:
+                texto_completo = _limpar_html(html_bruto)
+            elif url_pdf:
+                log.info("Reunião %d: textoAta vazio → extraindo do PDF.", nro)
+                texto_completo = _baixar_texto_pdf(session, nro, url_pdf)
+
+        if texto_completo is None:
             log.info("Reunião %d: tentando Wayback Machine...", nro)
             html_bruto = _baixar_html_wayback(session, nro)
+            if html_bruto:
+                texto_completo = _limpar_html(html_bruto)
 
-        if html_bruto is None:
+        if texto_completo is None:
             erros.append(
-                f"Reunião {nro} ({data}): HTML não obtido "
-                "(atas_detalhes 500 e Wayback sem snapshot)."
+                f"Reunião {nro} ({data}): texto não obtido "
+                "(atas_detalhes sem textoAta/PDF e Wayback sem snapshot)."
             )
             log.warning(erros[-1])
             continue
-
-        texto_completo = _limpar_html(html_bruto)
 
         if len(texto_completo) < 500:
             erros.append(

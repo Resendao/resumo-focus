@@ -27,6 +27,35 @@ O projeto adere a [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [0.4.0] — 2026-07-03
+
+Cobertura ampliada 48 → 80 atas (reuniões 200–279, jul/2016 → jun/2026) —
+todo o período do formato atual das atas (reforma Goldfajn). Coleta e
+extração 100% via script (zero tokens de LLM); Claude usado apenas no
+scoring das 32 atas novas (4 lotes com textos pré-extraídos).
+
+### Adicionado
+- `baixar_atas.py`: fallback de PDF para a era 200–231 (textoAta vem vazio
+  da API; o conteúdo está em urlPdfAta) — pdfplumber com segundo motor
+  pypdf para os PDFs malformados de 2018 (reuniões 217/219/220)
+- `coletar_selic.py::_janelas` — SGS 432 buscado em fatias ≤ 9 anos
+  (a API retorna HTTP 406 para janelas > 10 anos)
+- Backfill automático nos caches de Selic (→ 2015-06) e Focus OData
+  (→ 2016-01) quando o início requerido antecede o cache
+- Metas CMN 2016–2019 (4,50/4,50/4,50/4,25) em `meta_inflacao`
+- Dependências: pdfplumber 0.11.4, pypdf 6.14.2
+
+### Alterado
+- `atualizar_tom.py`: cobertura oficial passa a REUNIAO_INICIAL = 200
+- score_claude: 80 atas (32 novas pontuadas por Claude via Claude Code,
+  mesma rubrica dos lotes de 0.3.0)
+- Calibração com n = 79: claude β = 0,302 (p < 0,001), **R² = 0,579**
+  (era 0,367 com n = 47); léxico R² = 0,493; walk-forward com 59 previsões
+  — claude tem o menor RMSE (0,436). Gemini segue congelado em n = 47.
+- Focus: 90.747 obs. brutas (jan/2016 → jun/2026)
+
+---
+
 ## [0.3.0] — 2026-07-02
 
 Claude vira o scorer oficial do Índice de Tom; Gemini congelado como
