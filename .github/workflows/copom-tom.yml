@@ -15,7 +15,6 @@ on:
   schedule:
     - cron: "0 12 * * 2"   # terças 12h UTC (9h BRT)
   workflow_dispatch:        # disparo manual pelo GitHub
-  push:                     # TEMPORÁRIO: verificação do fix de CI — remover
 
 permissions:
   contents: write
