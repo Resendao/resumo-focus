@@ -16,3 +16,7 @@ output/paper/
 data/raw/*.pdf
 
 # output/focus/ é versionado de propósito — não ignorar
+
+# artefato do caminho Windows hardcoded em gerar_contexto_focus.py
+# (copia contexto-focus.md para C:/Users/Andre/... — só existe fora do Windows)
+/C:/
