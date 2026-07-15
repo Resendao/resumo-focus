@@ -446,8 +446,25 @@ def coletar(reuniao_inicial: int = 232) -> list[Document]:
     cache       = _carregar_cache_atas()
     cache_dirty = False          # evita writes desnecessários
 
-    session  = _criar_session()
-    reunioes = _listar_reunioes(session, reuniao_inicial)
+    session = _criar_session()
+    try:
+        reunioes = _listar_reunioes(session, reuniao_inicial)
+    except Exception as exc:
+        # A API do site do BCB recusa IPs de datacenter (403 em runners de
+        # CI e rotinas cloud). O cache versionado cobre todas as reuniões já
+        # coletadas — só a DETECÇÃO de ata nova fica indisponível nesta run.
+        reunioes = [
+            {"nroReuniao": int(nro), "dataReferencia": info["data"]}
+            for nro, info in cache.items()
+            if int(nro) >= reuniao_inicial
+        ]
+        if not reunioes:
+            raise
+        log.warning(
+            "Listagem BCB indisponível (%s) — seguindo com as %d reuniões "
+            "do cache local; atas novas não serão detectadas nesta execução.",
+            exc, len(reunioes),
+        )
 
     docs  = []
     erros = []

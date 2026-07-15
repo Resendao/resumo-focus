@@ -43,3 +43,42 @@ def test_janelas_sgs_divide_ranges_longos():
 def test_janelas_sgs_range_curto_uma_fatia():
     from coletar_selic import _janelas
     assert _janelas("2024-01-01", "2026-07-03", anos=9) == [("2024-01-01", "2026-07-03")]
+
+
+# ---------------------------------------------------------------------------
+# Fallback quando a listagem do BCB está inacessível (ex.: runner do CI)
+# ---------------------------------------------------------------------------
+
+def test_coletar_cai_para_cache_quando_listagem_falha(monkeypatch):
+    import baixar_atas as ba
+
+    def _explode(session, reuniao_inicial):
+        raise RuntimeError("Falha ao listar atas: HTTP 403")
+
+    cache = {
+        "278": {"data": "2026-04-29", "texto_ab": "A) Texto da ata 278"},
+        "279": {"data": "2026-06-17", "texto_ab": "A) Texto da ata 279"},
+        "150": {"data": "2010-01-01", "texto_ab": "A) Anterior à cobertura"},
+    }
+    monkeypatch.setattr(ba, "_listar_reunioes", _explode)
+    monkeypatch.setattr(ba, "_carregar_cache_atas", lambda: cache)
+
+    docs = ba.coletar(reuniao_inicial=200)
+
+    nros = sorted(d.metadata["nro_reuniao"] for d in docs)
+    assert nros == [278, 279]          # 150 fica fora (abaixo da cobertura)
+    assert docs[0].page_content.startswith("A) Texto")
+
+
+def test_coletar_propaga_erro_sem_cache(monkeypatch):
+    import baixar_atas as ba
+    import pytest
+
+    def _explode(session, reuniao_inicial):
+        raise RuntimeError("Falha ao listar atas: HTTP 403")
+
+    monkeypatch.setattr(ba, "_listar_reunioes", _explode)
+    monkeypatch.setattr(ba, "_carregar_cache_atas", lambda: {})
+
+    with pytest.raises(RuntimeError):
+        ba.coletar(reuniao_inicial=200)
