@@ -1,0 +1,17 @@
+# Dependências mínimas das rotinas cloud (focus-semanal e copom-leitor).
+#
+# As rotinas rodam em ambiente cuja versão de Python não controlamos, então
+# os pins são flexíveis — ao contrário do requirements.txt do paper, que
+# fixa versões exatas e exige Python 3.12 (numpy 1.26.4 não tem wheel 3.13).
+#
+# Scripts cobertos: baixar_focus.py, extrair_texto.py,
+# gerar_contexto_focus.py, coletar_expectativas.py, baixar_atas.py.
+
+requests>=2.32
+beautifulsoup4>=4.12
+lxml>=5
+pdfplumber>=0.11
+pypdf>=6
+pandas>=2.2
+python-bcb>=0.3.3,<0.5
+langchain-core>=0.3        # baixar_atas.py usa langchain_core.documents.Document
