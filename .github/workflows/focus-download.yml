@@ -4,7 +4,6 @@ on:
   schedule:
     - cron: "30 14 * * 1"   # toda segunda às 14h30 UTC (11h30 BRT — após publicação BCB)
   workflow_dispatch:          # disparo manual pelo GitHub
-  push:                       # TEMPORÁRIO: verificação dos fixes de CI — remover
 
 permissions:
   contents: write
