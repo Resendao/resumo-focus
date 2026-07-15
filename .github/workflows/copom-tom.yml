@@ -45,7 +45,20 @@ jobs:
       - name: Detectar atas sem score Claude
         id: detecta
         run: |
-          PEND=$(python scripts/atualizar_tom.py --detectar)
+          set +e
+          PEND=$(python scripts/atualizar_tom.py --detectar 2> detect_stderr.log)
+          CODE=$?
+          cat detect_stderr.log
+          if [ $CODE -ne 0 ]; then
+            # TEMPORÁRIO (diagnóstico): commita o stderr p/ inspeção sem auth
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -f detect_stderr.log
+            git commit -m "debug: stderr do --detectar (TEMPORARIO, remover)"
+            git pull --rebase origin main && git push
+            exit $CODE
+          fi
+          rm -f detect_stderr.log
           echo "pendentes=$PEND" >> "$GITHUB_OUTPUT"
           echo "Atas pendentes de score: ${PEND:-nenhuma}"
 
