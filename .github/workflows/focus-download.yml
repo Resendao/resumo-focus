@@ -20,6 +20,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # numpy==1.26.4 (e outros pins) não têm wheel para o Python 3.13,
+      # padrão atual do ubuntu-latest — fixar 3.12 até atualizar os pins.
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Instalar dependências
         run: pip install -r requirements.txt
 
