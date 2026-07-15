@@ -13,7 +13,6 @@ from datetime import date, timedelta
 from pathlib import Path
 
 import pandas as pd
-from bcb import Expectativas
 
 # ---------------------------------------------------------------------------
 # Configuração
@@ -39,26 +38,88 @@ _ANOS = [2026, 2027]
 # BCB helpers
 # ---------------------------------------------------------------------------
 
-_exp = Expectativas()
-_ep_anual  = _exp.get_endpoint("ExpectativasMercadoAnuais")
-_ep_selic  = _exp.get_endpoint("ExpectativasMercadoSelic")  # Selic por reunião
+# Cache bruto versionado no repositório, atualizado toda segunda pelo
+# GitHub Actions (focus-download.yml). É o fallback quando o host
+# olinda.bcb.gov.br está inacessível — caso das rotinas cloud, cujo proxy
+# de saída bloqueia esse host (logs/erros.md 2026-07-01).
+_CACHE_RAW = Path("data/focus_expectativas_raw.csv")
+
+# Endpoints OData construídos sob demanda: a construção já faz uma chamada
+# de metadados ao olinda — no nível do módulo, derrubaria o import inteiro
+# em ambientes onde o host é bloqueado, antes de qualquer fallback.
+_ep_anual = None
+_ep_selic = None
+_CACHE_USADO = False
+
+
+def _conectar() -> bool:
+    """Inicializa os endpoints OData; False se o olinda estiver inacessível."""
+    global _ep_anual, _ep_selic
+    if _ep_anual is not None:
+        return True
+    try:
+        from bcb import Expectativas
+        exp = Expectativas()
+        _ep_anual = exp.get_endpoint("ExpectativasMercadoAnuais")
+        _ep_selic = exp.get_endpoint("ExpectativasMercadoSelic")  # Selic por reunião
+        return True
+    except Exception as e:
+        print(f"  Aviso OData inacessível: {e}")
+        return False
+
+
+def _usou_cache() -> bool:
+    return _CACHE_USADO
+
+
+def _anual_do_cache(indicador: str, cache_path: Path | None = None) -> pd.DataFrame:
+    """
+    Última janela de _CUTOFF_DIAS do indicador a partir do cache bruto.
+
+    A janela é relativa à pesquisa mais recente DO CACHE (não a hoje):
+    se o cache estiver defasado, ainda produz o melhor contexto possível.
+    """
+    if cache_path is None:
+        cache_path = _CACHE_RAW
+    if not cache_path.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(cache_path, parse_dates=["Data"])
+    df = df[df["Indicador"] == indicador]
+    if df.empty:
+        return df
+    df = df[df["Data"] >= df["Data"].max() - pd.Timedelta(days=_CUTOFF_DIAS)]
+    df["DataReferencia"] = df["DataReferencia"].astype(str)
+    return df.sort_values(["Data", "DataReferencia"], ascending=[False, True])
 
 
 def _anual(indicador: str, n: int = 30) -> pd.DataFrame:
     """
     Retorna expectativas anuais do indicador — até n linhas, ordenadas
     por Data desc em Python (a API não aceita orderby confiável).
+    OData primeiro; cache versionado como fallback.
     """
-    cutoff = (date.today() - timedelta(days=_CUTOFF_DIAS)).strftime("%Y-%m-%d")
-    df = _ep_anual.query().filter(
-        _ep_anual.Indicador == indicador,
-        _ep_anual.Data >= cutoff,
-    ).limit(n).collect()
-    return df.sort_values(["Data", "DataReferencia"], ascending=[False, True])
+    global _CACHE_USADO
+    if _conectar():
+        try:
+            cutoff = (date.today() - timedelta(days=_CUTOFF_DIAS)).strftime("%Y-%m-%d")
+            df = _ep_anual.query().filter(
+                _ep_anual.Indicador == indicador,
+                _ep_anual.Data >= cutoff,
+            ).limit(n).collect()
+            return df.sort_values(["Data", "DataReferencia"], ascending=[False, True])
+        except Exception as e:
+            print(f"  Aviso {indicador} via OData: {e} — tentando cache.")
+    df = _anual_do_cache(indicador)
+    if not df.empty:
+        _CACHE_USADO = True
+    return df
 
 
 def _selic_reunioes(n: int = 12) -> pd.DataFrame:
-    """Expectativas de Selic por reunião do Copom (caminho esperado)."""
+    """Expectativas de Selic por reunião do Copom (caminho esperado).
+    Sem equivalente no cache bruto — indisponível quando o OData falha."""
+    if not _conectar():
+        return pd.DataFrame()
     try:
         cutoff = (date.today() - timedelta(days=_CUTOFF_DIAS)).strftime("%Y-%m-%d")
         df = _ep_selic.query().filter(
@@ -217,7 +278,9 @@ def gerar(destino: Path = _DEST) -> Path:
         (f"- **PIB 2026**: {pib_26:.2f}%"
          if pib_26 is not None else "- PIB 2026: dado indisponível"),
         "",
-        f"_Fonte: BCB Focus OData · Referência: {hoje_iso}_",
+        (f"_Fonte: cache do repositório — OData indisponível · Referência: {hoje_iso}_"
+         if _usou_cache() else
+         f"_Fonte: BCB Focus OData · Referência: {hoje_iso}_"),
     ]
 
     conteudo = "\n".join(linhas) + "\n"

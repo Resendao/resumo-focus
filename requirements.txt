@@ -23,7 +23,7 @@ statsmodels==0.14.4
 scikit-learn==1.5.2
 
 # BCB (Selic SGS 432)
-python-bcb==0.3.1
+python-bcb==0.3.3   # 0.3.1 não existe no PyPI (0.3.0 → 0.3.2); 0.3.3 é a versão validada localmente
 
 # Gráficos estilo ggplot
 plotnine==0.13.6
