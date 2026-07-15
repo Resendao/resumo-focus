@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "/home/runner/work/resumo-focus/resumo-focus/scripts/atualizar_tom.py", line 143, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/runner/work/resumo-focus/resumo-focus/scripts/atualizar_tom.py", line 77, in main
+    from calibrar import calibrar, calibrar_multivariado, holdout, walk_forward
+  File "/home/runner/work/resumo-focus/resumo-focus/src/calibrar.py", line 44, in <module>
+    import statsmodels.api as sm
+  File "/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/statsmodels/api.py", line 76, in <module>
+    from . import datasets, distributions, iolib, regression, robust, tools
+  File "/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/statsmodels/distributions/__init__.py", line 7, in <module>
+    from .discrete import (
+  File "/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/statsmodels/distributions/discrete.py", line 5, in <module>
+    from scipy._lib._util import _lazywhere
+ImportError: cannot import name '_lazywhere' from 'scipy._lib._util' (/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/scipy/_lib/_util.py)
