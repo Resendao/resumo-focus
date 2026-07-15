@@ -32,4 +32,4 @@
 | 278 | 2026-04-29 | +2.25 | +0.00 | 14.75 | -0.25 |
 | 279 | 2026-06-17 | +2.50 | +0.00 | 14.50 | -0.25 |
 
-_Fonte: output/scores/scores_consolidado.csv · Gerado em 2026-07-03_
+_Fonte: output/scores/scores_consolidado.csv · Gerado em 2026-07-15_
