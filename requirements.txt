@@ -19,7 +19,8 @@ pandas==2.2.3
 numpy==1.26.4
 
 # Econometria e ML
-statsmodels==0.14.4
+statsmodels==0.14.5  # 0.14.4 quebra com scipy>=1.15 (_lazywhere removido)
+scipy==1.16.0        # antes vinha solto via scikit-learn; pinado p/ reproducibilidade
 scikit-learn==1.5.2
 
 # BCB (Selic SGS 432)
