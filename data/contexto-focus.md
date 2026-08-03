@@ -6,17 +6,17 @@
 
 | Indicador | 2026 | Δ sem. | 2027 | Δ sem. |
 |-----------|------|--------|------|--------|
-| IPCA | 5.10% | — | 4.22% | — |
-| PIB Total | 1.99% | — | 1.59% | — |
-| Câmbio | R$ 5.20 | — | R$ 5.28 | — |
-| Selic | 14.00% | — | 12.00% | — |
-| IGP-M | 5.40% | — | 4.18% | — |
+| IPCA | 5.03% | ↓ -0.09 | 4.22% | → |
+| PIB Total | 1.99% | → | 1.57% | ↓ -0.03 |
+| Câmbio | R$ 5.20 | → | R$ 5.28 | ↓ -0.01 |
+| Selic | 13.75% | ↓ -0.25 | 12.00% | → |
+| IGP-M | — | — | — | — |
 
 ## Para uso dos agentes
 
-- **Selic fim-2026**: 14.00% a.a.
-- **IPCA 2026**: 5.10% — ACIMA da meta de 3%
+- **Selic fim-2026**: 13.75% a.a. — **revisado para baixo esta semana**
+- **IPCA 2026**: 5.03% — ACIMA da meta de 3%
 - **Câmbio 2026**: R$ 5.20/US$
 - **PIB 2026**: 1.99%
 
-_Fonte: BCB Focus OData · Referência: 2026-08-03_
+_Fonte: cache do repositório — OData indisponível · Referência: 2026-08-03_
