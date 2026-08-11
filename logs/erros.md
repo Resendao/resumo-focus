@@ -79,3 +79,6 @@
 - Reunião 217 (2018-09-19): texto não obtido (atas_detalhes sem textoAta/PDF e Wayback sem snapshot).
 - Reunião 219 (2018-12-12): texto não obtido (atas_detalhes sem textoAta/PDF e Wayback sem snapshot).
 - Reunião 220 (2019-02-06): texto não obtido (atas_detalhes sem textoAta/PDF e Wayback sem snapshot).
+
+## atualizar_tom — 2026-08-11 12:40
+- Atas [280] sem score Claude — pontue via /pontuar-atas (Claude Code local) ou aguarde o passo claude-code-action do CI.
