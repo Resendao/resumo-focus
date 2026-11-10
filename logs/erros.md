@@ -118,3 +118,6 @@
 
 ## atualizar_tom — 2026-11-03 18:47
 - Atas [280, 281] sem score Claude — pontue via /pontuar-atas (Claude Code local) ou aguarde o passo claude-code-action do CI.
+
+## atualizar_tom — 2026-11-10 19:02
+- Atas [280, 281, 282] sem score Claude — pontue via /pontuar-atas (Claude Code local) ou aguarde o passo claude-code-action do CI.

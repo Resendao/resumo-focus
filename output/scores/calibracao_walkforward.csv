@@ -1,4 +1,4 @@
 modelo,n_pred,rmse_wf,mae_wf
-lexico,61,0.44316,0.35483
+lexico,62,0.44408,0.35712
 gemini,28,0.51956,0.47186
 claude,59,0.43595,0.37484

@@ -1,12 +1,12 @@
-# Contexto: Índice de Tom do Copom — reunião 281 (2026-09-16)
+# Contexto: Índice de Tom do Copom — reunião 282 (2026-11-04)
 
-> Gerado automaticamente a partir de output/scores/ (léxico + LLMs, 82 atas desde 2016-07-20). Escala: −3 (fortemente dovish) a +3 (fortemente hawkish).
+> Gerado automaticamente a partir de output/scores/ (léxico + LLMs, 83 atas desde 2016-07-20). Escala: −3 (fortemente dovish) a +3 (fortemente hawkish).
 
 ## Sinal atual
 
 - **Tom da última ata (média dos LLMs)**: — (indefinido)
-- **Média móvel (3 reuniões)**: +2.12 (hawkish)
-- **Selic vigente**: 14.00% a.a. (Δ última reunião: -0.25 p.p.)
+- **Média móvel (3 reuniões)**: — (indefinido)
+- **Selic vigente**: 13.75% a.a. (Δ última reunião: -0.25 p.p.)
 
 ## Previsão implícita para a próxima reunião
 
@@ -14,15 +14,14 @@
 
 ## Expectativas na véspera da última reunião (Focus)
 
-- **Desvio da meta (ano seguinte)**: +1.30 p.p. (E[IPCA] = 4.30% vs meta 3.00%)
-- **IPCA 12m suavizado**: 4.63%
-- **Selic fim de ano**: 13.75% a.a.
+- **Desvio da meta (ano seguinte)**: +1.80 p.p. (E[IPCA] = 4.80% vs meta 3.00%)
+- **IPCA 12m suavizado**: 4.98%
+- **Selic fim de ano**: 13.50% a.a.
 
 ## Últimas 8 reuniões
 
 | Reunião | Data | Tom | Léxico | Selic | ΔSelic |
 |---------|------|-----|--------|-------|--------|
-| 274 | 2025-11-05 | +1.38 | -0.60 | 15.00 | +0.00 |
 | 275 | 2025-12-10 | +1.25 | -0.60 | 15.00 | +0.00 |
 | 276 | 2026-01-28 | +1.62 | +0.50 | 15.00 | +0.00 |
 | 277 | 2026-03-18 | +1.62 | +0.33 | 15.00 | +0.00 |
@@ -30,5 +29,6 @@
 | 279 | 2026-06-17 | +2.12 | +0.00 | 14.50 | -0.25 |
 | 280 | 2026-08-05 | — | +0.60 | 14.25 | -0.25 |
 | 281 | 2026-09-16 | — | +0.00 | 14.00 | -0.25 |
+| 282 | 2026-11-04 | — | +0.60 | 13.75 | -0.25 |
 
-_Fonte: output/scores/scores_consolidado.csv · Gerado em 2026-11-03_
+_Fonte: output/scores/scores_consolidado.csv · Gerado em 2026-11-10_
